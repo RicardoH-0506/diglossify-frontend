@@ -1,5 +1,5 @@
-import { AUTO_LANGUAGE } from '../constants'
-import type { Action, fromLanguage, Language, State } from '../types.d'
+import { AUTO_LANGUAGE } from '../../../shared/constants/constants'
+import type { Action, fromLanguage, Language, State } from '../../../shared/types/types'
 import { useReducer } from 'react'
 
 const initialState:State = {

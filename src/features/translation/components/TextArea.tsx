@@ -1,5 +1,5 @@
 import { Form } from 'react-bootstrap'
-import { SectionType, type fromLanguage, type Language } from '../types.d'
+import { type SectionType, type fromLanguage, type Language, SectionTypeConst } from '../../../shared/types/types'
 
 interface TextAreaProps {
   loading?: boolean
@@ -20,7 +20,7 @@ type PlaceholderProps = {
 }
 
 const getPlaceholder = ({ type, loading, valueFromLang, valueToLang }: PlaceholderProps) => {
-  if (type === SectionType.FROM) return 'Introduce a text to translate'
+  if (type === SectionTypeConst.FROM) return 'Introduce a text to translate'
   if (valueFromLang === valueToLang) return 'choose different languages'
   if (loading === true) return 'Loading...'
 
@@ -28,7 +28,7 @@ const getPlaceholder = ({ type, loading, valueFromLang, valueToLang }: Placehold
 }
 
 export function TextArea ({ type, loading, value, valueFromLang, valueToLang, onChange }: TextAreaProps) {
-  const styles = type === SectionType.FROM
+  const styles = type === SectionTypeConst.FROM
     ? commonStyles
     : { ...commonStyles, backgroundColor: '#f5f5f5' }
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -37,8 +37,8 @@ export function TextArea ({ type, loading, value, valueFromLang, valueToLang, on
 
   return (
     <Form.Control
-      autoFocus={type === SectionType.FROM}
-      disabled={type === SectionType.TO}
+      autoFocus={type === SectionTypeConst.FROM}
+      disabled={type === SectionTypeConst.TO}
       as='textarea'
       placeholder={getPlaceholder({ type, loading, valueFromLang, valueToLang })}
       // @ts-expect-error resize none are not valid props according to types
