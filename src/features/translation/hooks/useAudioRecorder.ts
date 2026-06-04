@@ -61,38 +61,9 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       isWsReadyRef.current = false
       audioBufferRef.current = [] // Inicializamos el búfer vacío
 
-      // 1. Obtener acceso al micrófono
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
 
-      // 2. Configurar el MediaRecorder y su evento primero (para tenerlo listo en memoria)
-      let mimeType = 'audio/webm'
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'audio/ogg'
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = ''
-
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
-      mediaRecorderRef.current = mediaRecorder
-
-      mediaRecorder.ondataavailable = async (event) => {
-        if (event.data.size > 0) {
-          try {
-            const arrayBuffer = await event.data.arrayBuffer()
-
-            // ¿El canal está listo y abierto? Envíalo en vivo
-            if (socketRef.current?.readyState === WebSocket.OPEN && isWsReadyRef.current) {
-              socketRef.current.send(arrayBuffer)
-            } else {
-              // ¿No está listo el servidor aún? Lo guardamos en la sala de espera
-              console.log('Server not ready, buffering audio chunk...')
-              audioBufferRef.current.push(arrayBuffer)
-            }
-          } catch (err) {
-            console.error('Error handling audio chunk:', err)
-          }
-        }
-      }
-
-      // 3. Resolver la URL y abrir el WebSocket
       const apiUrl = import.meta.env.VITE_TRANSLATE_API_URL || 'http://localhost:1234/translate'
       const url = new URL(apiUrl)
       const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -103,7 +74,6 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       socket.binaryType = 'arraybuffer'
       socketRef.current = socket
 
-      // 4. Configurar los eventos del WebSocket
       socket.onopen = () => {
         console.log('WebSocket opened, sending setup...')
         socket.send(JSON.stringify({
@@ -112,6 +82,9 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
           toLang
         }))
 
+        // NOTA: Si tu backend NO envía un mensaje de confirmación,
+        // deja la línea de abajo para activar el envío.
+        // Si tu backend SÍ envía un mensaje al conectar, activa el ref en el onmessage.
         isWsReadyRef.current = true
 
         // Vaciamos el búfer acumulado de inmediato si ya hay audio guardado
@@ -120,18 +93,20 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
           audioBufferRef.current.forEach(chunk => socket.send(chunk))
           audioBufferRef.current = []
         }
-
-        // 🔥 El único inicio de grabación válido: Solo cuando el WebSocket está abierto y seguro
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive') {
-          console.log('Starting MediaRecorder AFTER handshake secure.')
-          mediaRecorderRef.current.start(500)
-        }
       }
 
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
           console.log('WebSocket received:', data)
+
+          // EJEMPLO: Si tu backend responde un tipo 'ready' o 'connected' al recibir el setup:
+          // if (data.type === 'ready') {
+          //   isWsReadyRef.current = true
+          //   audioBufferRef.current.forEach(chunk => socket.send(chunk))
+          //   audioBufferRef.current = []
+          //   return
+          // }
 
           if (data.type === 'status') {
             if (data.message === 'Transcribing...') {
@@ -165,7 +140,33 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
         setIsRecording(false)
       }
 
-      // 🛑 NOTA: Quitamos el mediaRecorder.start(500) que estaba aquí al final duplicado
+      let mimeType = 'audio/webm'
+      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'audio/ogg'
+      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = ''
+
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      mediaRecorderRef.current = mediaRecorder
+
+      mediaRecorder.ondataavailable = async (event) => {
+        if (event.data.size > 0) {
+          try {
+            const arrayBuffer = await event.data.arrayBuffer()
+
+            // ¿El canal está listo y abierto? Envíalo en vivo
+            if (socket.readyState === WebSocket.OPEN && isWsReadyRef.current) {
+              socket.send(arrayBuffer)
+            } else {
+              // ¿No está listo el servidor aún? Lo guardamos en la sala de espera
+              console.log('Server not ready, buffering audio chunk...')
+              audioBufferRef.current.push(arrayBuffer)
+            }
+          } catch (err) {
+            console.error('Error handling audio chunk:', err)
+          }
+        }
+      }
+
+      mediaRecorder.start(500)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       console.error('Error initiating recording:', err)
