@@ -1,48 +1,41 @@
-import { Form } from 'react-bootstrap'
-import { type SectionType, type fromLanguage, type Language, SectionTypeConst } from '../../../shared/types/types'
+import { type SectionType, type fromLanguage, type Language, SectionTypeConst } from '../types'
+import { Textarea } from '@/components/ui/textarea'
 
 interface TextAreaProps {
   loading?: boolean
   type: SectionType
   value: string
-  valueFromLang?: fromLanguage,
+  valueFromLang?: fromLanguage
   valueToLang?: Language
   onChange: (value: string) => void
 }
 
-const commonStyles = { border: 0, height: '200px', resize: 'none' }
-
 type PlaceholderProps = {
-  type: SectionType,
-  loading?: boolean,
-  valueFromLang?: fromLanguage,
+  type: SectionType
+  loading?: boolean
+  valueFromLang?: fromLanguage
   valueToLang?: Language
 }
 
 const getPlaceholder = ({ type, loading, valueFromLang, valueToLang }: PlaceholderProps) => {
-  if (type === SectionTypeConst.FROM) return 'Introduce a text to translate'
-  if (valueFromLang === valueToLang) return 'choose different languages'
-  if (loading === true) return 'Loading...'
+  if (type === SectionTypeConst.FROM) return 'Type something to translate...'
+  if (valueFromLang === valueToLang) return 'Choose different languages'
+  if (loading === true) return 'Translating...'
 
   return 'Translation'
 }
 
 export function TextArea ({ type, loading, value, valueFromLang, valueToLang, onChange }: TextAreaProps) {
-  const styles = type === SectionTypeConst.FROM
-    ? commonStyles
-    : { ...commonStyles, backgroundColor: '#f5f5f5' }
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(event?.target.value)
   }
 
   return (
-    <Form.Control
+    <Textarea
       autoFocus={type === SectionTypeConst.FROM}
       disabled={type === SectionTypeConst.TO}
-      as='textarea'
       placeholder={getPlaceholder({ type, loading, valueFromLang, valueToLang })}
-      // @ts-expect-error resize none are not valid props according to types
-      style={styles}
+      className='min-h-[200px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-2 py-2 text-base md:text-lg focus-visible:ring-transparent disabled:opacity-100 disabled:bg-transparent disabled:cursor-text'
       value={value}
       onChange={handleChange}
     />

@@ -1,8 +1,8 @@
-import { AUTO_LANGUAGE } from '../../../shared/constants/constants'
-import type { Action, fromLanguage, Language, State } from '../../../shared/types/types'
-import { useReducer } from 'react'
+import { AUTO_LANGUAGE } from '../constants'
+import type { Action, fromLanguage, Language, State } from '../types'
+import { useReducer, useCallback } from 'react'
 
-const initialState:State = {
+const initialState: State = {
   fromLang: 'auto',
   toLang: 'en',
   fromText: '',
@@ -68,11 +68,25 @@ export function useStore () {
     loading
   }, dispatch] = useReducer(reducer, initialState)
 
-  const setFromLang = (payload: fromLanguage) => dispatch({ type: 'SET_FROM_LANG', payload })
-  const setToLang = (payload: Language) => dispatch({ type: 'SET_TO_LANG', payload })
-  const interchangeLanguages = () => dispatch({ type: 'INTERCHANGE_LANGUAGES' })
-  const setFromText = (payload: string) => dispatch({ type: 'SET_FROM_TEXT', payload })
-  const setResult = (payload: string) => dispatch({ type: 'SET_RESULT', payload })
+  const setFromLang = useCallback((payload: fromLanguage) => {
+    dispatch({ type: 'SET_FROM_LANG', payload })
+  }, [])
+
+  const setToLang = useCallback((payload: Language) => {
+    dispatch({ type: 'SET_TO_LANG', payload })
+  }, [])
+
+  const interchangeLanguages = useCallback(() => {
+    dispatch({ type: 'INTERCHANGE_LANGUAGES' })
+  }, [])
+
+  const setFromText = useCallback((payload: string) => {
+    dispatch({ type: 'SET_FROM_TEXT', payload })
+  }, [])
+
+  const setResult = useCallback((payload: string) => {
+    dispatch({ type: 'SET_RESULT', payload })
+  }, [])
 
   return {
     fromLang,

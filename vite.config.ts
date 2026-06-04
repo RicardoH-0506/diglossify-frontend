@@ -1,16 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
+import tailwindcss from '@tailwindcss/vite'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   build: {
     minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          bootstrap: ['react-bootstrap', 'bootstrap']
+          vendor: ['react', 'react-dom']
         }
       }
     },
@@ -18,6 +24,6 @@ export default defineConfig({
     cssCodeSplit: true
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-bootstrap']
+    include: ['react', 'react-dom']
   }
 })

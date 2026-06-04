@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useDebounce } from './useDebounce'
-import type { fromLanguage, Language } from '../../../shared/types/types'
-import { TranslationService, type TranslationRequest } from '../services/TranslationService'
+import type { fromLanguage, Language, TranslationRequest } from '../types'
+import { translateText, validateTranslationRequest } from '../api/translation.api'
 
 interface UseTranslationParams {
   readonly fromLang: fromLanguage
@@ -30,18 +30,22 @@ export function useTranslation ({
   // Ref para evitar race conditions
   const requestIdRef = useRef<number>(0)
 
-  const translate = useCallback(async (request: TranslationRequest, currentRequestId: number): Promise<void> => {
+  const translate = useCallback(async (request: TranslationRequest, currentRequestId: number, signal: AbortSignal): Promise<void> => {
     try {
       setLoading(true)
       setError(null)
 
-      const response = await TranslationService.translate(request)
+      const response = await translateText(request, signal)
 
       // Solo actualizar si es la petición más reciente
       if (currentRequestId === requestIdRef.current) {
         setTranslatedText(response.translatedText)
       }
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        // Ignorar si fue abortado
+        return
+      }
       // Solo actualizar si es la petición más reciente
       if (currentRequestId === requestIdRef.current) {
         const errorMessage = err instanceof Error ? err.message : String(err)
@@ -56,15 +60,26 @@ export function useTranslation ({
   }, [])
 
   useEffect(() => {
-    // Incrementar el ID de la petición
+    // Incrementar el ID de la petición y crear un nuevo controller
     const currentRequestId = ++requestIdRef.current
+    const controller = new AbortController()
 
-    // Validar la petición
-    const validationError = TranslationService.validateRequest({
+    // No llamar a la API ni validar si el texto está vacío (limpieza silenciosa)
+    if (!debouncedText.trim()) {
+      setTranslatedText('')
+      setError(null)
+      setLoading(false)
+      return
+    }
+
+    const requestPayload = {
       fromLang,
       toLang,
       text: debouncedText
-    })
+    }
+
+    // Validar la petición (por ejemplo, si los idiomas son iguales)
+    const validationError = validateTranslationRequest(requestPayload)
 
     if (validationError) {
       setError(validationError.message)
@@ -73,24 +88,12 @@ export function useTranslation ({
       return
     }
 
-    // No llamar a la API si el texto está vacío o los idiomas son iguales
-    if (!debouncedText.trim() || fromLang === toLang) {
-      setTranslatedText('')
-      setError(null)
-      setLoading(false)
-      return
-    }
+    // Ejecutar la traducción pasando el signal del controller
+    translate(requestPayload, currentRequestId, controller.signal)
 
-    // Ejecutar la traducción
-    translate({
-      fromLang,
-      toLang,
-      text: debouncedText
-    }, currentRequestId)
-
-    // Cleanup function
+    // Cleanup function: abortar la petición actual al cambiar los parámetros o desmontar
     return () => {
-      TranslationService.cancelCurrentRequest()
+      controller.abort()
     }
   }, [debouncedText, fromLang, toLang, translate])
 
