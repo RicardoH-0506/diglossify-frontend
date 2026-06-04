@@ -35,6 +35,7 @@ export function TranslationContainer () {
     isRecording,
     status,
     error: audioError,
+    isInitializing,
     startRecording,
     stopRecording
   } = useAudioRecorder({ onResult: handleAudioResult })
@@ -101,24 +102,37 @@ export function TranslationContainer () {
               </div>
               <div className='flex items-center justify-between pt-2 border-t border-border/10 mt-2 h-[38px]'>
                 <div className='flex items-center gap-2'>
-                  <button
-                    onClick={handleMicClick}
-                    className={`p-2 rounded-full border transition-all duration-200 flex items-center justify-center cursor-pointer ${
-                      isRecording
-                        ? 'bg-red-500/10 border-red-500/30 text-red-500 animate-pulse-record'
-                        : 'bg-muted/20 border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  <div className='flex items-center gap-2'>
+                    <button
+                      onClick={handleMicClick}
+                      disabled={isInitializing} // 🔒 Deshabilita el botón mientras el WebSocket se conecta
+                      className={`p-2 rounded-full border transition-all duration-200 flex items-center justify-center ${
+                      isInitializing
+                        ? 'bg-muted/10 border-border/10 text-muted-foreground/40 cursor-not-allowed opacity-50'
+                        : isRecording
+                          ? 'bg-red-500/10 border-red-500/30 text-red-500 animate-pulse-record cursor-pointer'
+                          : 'bg-muted/20 border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/40 cursor-pointer'
                     }`}
-                    title={isRecording ? 'Stop recording' : 'Translate by voice'}
-                    aria-label={isRecording ? 'Stop recording' : 'Translate by voice'}
-                  >
-                    {isRecording ? <Square className='size-3.5' /> : <Mic className='size-3.5' />}
-                  </button>
-                  {status !== 'idle' && status !== 'recording' && (
-                    <span className='text-xs text-muted-foreground animate-pulse font-medium'>
-                      {status === 'transcribing' && 'Transcribing audio...'}
-                      {status === 'translating' && 'Translating speech...'}
-                    </span>
-                  )}
+                      title={isInitializing ? 'Connecting to server...' : isRecording ? 'Stop recording' : 'Translate by voice'}
+                      aria-label={isInitializing ? 'Connecting to server...' : isRecording ? 'Stop recording' : 'Translate by voice'}
+                    >
+                      {isRecording ? <Square className='size-3.5' /> : <Mic className='size-3.5' />}
+                    </button>
+
+                    {/* Textos de estado dinámicos */}
+                    {isInitializing && (
+                      <span className='text-xs text-muted-foreground animate-pulse font-medium'>
+                        Connecting to server...
+                      </span>
+                    )}
+
+                    {status !== 'idle' && status !== 'recording' && !isInitializing && (
+                      <span className='text-xs text-muted-foreground animate-pulse font-medium'>
+                        {status === 'transcribing' && 'Transcribing audio...'}
+                        {status === 'translating' && 'Translating speech...'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

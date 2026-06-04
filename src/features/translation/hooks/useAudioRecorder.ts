@@ -11,6 +11,9 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
   const [status, setStatus] = useState<AudioRecordingStatus>('idle')
   const [error, setError] = useState<string | null>(null)
 
+  // 🎙️ NUEVO: Estado para bloquear la interfaz mientras el WebSocket conecta
+  const [isInitializing, setIsInitializing] = useState(false)
+
   const isWsReadyRef = useRef(false)
   // Búfer para guardar el audio mientras el servidor se conecta
   const audioBufferRef = useRef<ArrayBuffer[]>([])
@@ -34,6 +37,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
     isWsReadyRef.current = false
     audioBufferRef.current = [] // Limpiamos el búfer
     setIsRecording(false)
+    setIsInitializing(false) // Limpiamos el estado de inicialización
   }, [])
 
   const stopRecording = useCallback(() => {
@@ -59,6 +63,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       setIsRecording(true)
       setStatus('recording')
       isWsReadyRef.current = false
+      setIsInitializing(true) // ⏱️ Activamos la inicialización en cuanto inicia el proceso
       audioBufferRef.current = [] // Inicializamos el búfer vacío
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -82,10 +87,8 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
           toLang
         }))
 
-        // NOTA: Si tu backend NO envía un mensaje de confirmación,
-        // deja la línea de abajo para activar el envío.
-        // Si tu backend SÍ envía un mensaje al conectar, activa el ref en el onmessage.
         isWsReadyRef.current = true
+        setIsInitializing(false) // 🎉 ¡Conectado con éxito! Ya se puede liberar el botón
 
         // Vaciamos el búfer acumulado de inmediato si ya hay audio guardado
         if (audioBufferRef.current.length > 0) {
@@ -99,14 +102,6 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
         try {
           const data = JSON.parse(event.data)
           console.log('WebSocket received:', data)
-
-          // EJEMPLO: Si tu backend responde un tipo 'ready' o 'connected' al recibir el setup:
-          // if (data.type === 'ready') {
-          //   isWsReadyRef.current = true
-          //   audioBufferRef.current.forEach(chunk => socket.send(chunk))
-          //   audioBufferRef.current = []
-          //   return
-          // }
 
           if (data.type === 'status') {
             if (data.message === 'Transcribing...') {
@@ -138,6 +133,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       socket.onclose = () => {
         console.log('WebSocket closed')
         setIsRecording(false)
+        setIsInitializing(false)
       }
 
       let mimeType = 'audio/webm'
@@ -172,6 +168,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       console.error('Error initiating recording:', err)
       setError(errorMessage || 'Permission denied')
       setIsRecording(false)
+      setIsInitializing(false)
       setStatus('idle')
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop())
@@ -183,6 +180,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
     isRecording,
     status,
     error,
+    isInitializing, // 🎙️ Retornamos la nueva bandera para que TranslationContainer la use
     startRecording,
     stopRecording
   }
