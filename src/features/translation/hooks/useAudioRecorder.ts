@@ -61,7 +61,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       const apiUrl = import.meta.env.VITE_TRANSLATE_API_URL || 'http://localhost:1234/translate'
       const url = new URL(apiUrl)
       const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-      const wsUrl = `${wsProtocol}//${url.host}`
+      const wsUrl = `${wsProtocol}//${url.host}${url.pathname}`
 
       console.log(`Connecting to WebSocket translation server at: ${wsUrl}`)
       const socket = new WebSocket(wsUrl)
