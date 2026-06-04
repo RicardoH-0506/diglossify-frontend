@@ -65,6 +65,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
 
       console.log(`Connecting to WebSocket translation server at: ${wsUrl}`)
       const socket = new WebSocket(wsUrl)
+      socket.binaryType = 'arraybuffer'
       socketRef.current = socket
 
       socket.onopen = () => {
@@ -124,9 +125,15 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
       mediaRecorderRef.current = mediaRecorder
 
-      mediaRecorder.ondataavailable = (event) => {
+      mediaRecorder.ondataavailable = async (event) => {
         if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
-          socket.send(event.data)
+          try {
+            // Convertimos el Blob a ArrayBuffer explícitamente
+            const arrayBuffer = await event.data.arrayBuffer()
+            socket.send(arrayBuffer)
+          } catch (err) {
+            console.error('Error converting audio to ArrayBuffer:', err)
+          }
         }
       }
 
