@@ -11,7 +11,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
   const [status, setStatus] = useState<AudioRecordingStatus>('idle')
   const [error, setError] = useState<string | null>(null)
 
-  // 🎙️ NUEVO: Estado para bloquear la interfaz mientras el WebSocket conecta
+  // Estado para bloquear la interfaz mientras el WebSocket conecta
   const [isInitializing, setIsInitializing] = useState(false)
 
   const isWsReadyRef = useRef(false)
@@ -63,7 +63,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       setIsRecording(true)
       setStatus('recording')
       isWsReadyRef.current = false
-      setIsInitializing(true) // ⏱️ Activamos la inicialización en cuanto inicia el proceso
+      setIsInitializing(true) // Activamos la inicialización en cuanto inicia el proceso
       audioBufferRef.current = [] // Inicializamos el búfer vacío
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -88,7 +88,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
         }))
 
         isWsReadyRef.current = true
-        setIsInitializing(false) // 🎉 ¡Conectado con éxito! Ya se puede liberar el botón
+        setIsInitializing(false) // Conectado con éxito ya se puede liberar el botón
 
         // Vaciamos el búfer acumulado de inmediato si ya hay audio guardado
         if (audioBufferRef.current.length > 0) {
@@ -180,7 +180,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
     isRecording,
     status,
     error,
-    isInitializing, // 🎙️ Retornamos la nueva bandera para que TranslationContainer la use
+    isInitializing, //  Retornamos la nueva bandera para que TranslationContainer la use
     startRecording,
     stopRecording
   }
