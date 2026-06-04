@@ -11,6 +11,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
   const [status, setStatus] = useState<AudioRecordingStatus>('idle')
   const [error, setError] = useState<string | null>(null)
 
+  const isWsReadyRef = useRef(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const socketRef = useRef<WebSocket | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -27,6 +28,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
         socketRef.current.close()
       }
     }
+    isWsReadyRef.current = false
     setIsRecording(false)
   }, [])
 
@@ -52,6 +54,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       setError(null)
       setIsRecording(true)
       setStatus('recording')
+      isWsReadyRef.current = false
 
       // Get microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -75,6 +78,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
           fromLang,
           toLang
         }))
+        isWsReadyRef.current = true
       }
 
       socket.onmessage = (event) => {
@@ -126,7 +130,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       mediaRecorderRef.current = mediaRecorder
 
       mediaRecorder.ondataavailable = async (event) => {
-        if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+        if (event.data.size > 0 && socket.readyState === WebSocket.OPEN && isWsReadyRef.current) {
           try {
             // Convertimos el Blob a ArrayBuffer explícitamente
             const arrayBuffer = await event.data.arrayBuffer()
@@ -139,9 +143,10 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
 
       // Start recording with 500ms chunk intervals
       mediaRecorder.start(500)
-    } catch (err: any) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       console.error('Error initiating microphone recording:', err)
-      setError(err.message || 'Permission denied or microphone unavailable')
+      setError(errorMessage || 'Permission denied or microphone unavailable')
       setIsRecording(false)
       setStatus('idle')
       if (streamRef.current) {
