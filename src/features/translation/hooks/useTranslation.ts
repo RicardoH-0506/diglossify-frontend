@@ -24,10 +24,10 @@ export function useTranslation ({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
 
-  // Aplica debounce al texto de entrada
+  // Apply debounce to input text
   const debouncedText = useDebounce(fromText, 300)
 
-  // Ref para evitar race conditions
+  // Ref to avoid race conditions
   const requestIdRef = useRef<number>(0)
 
   const translate = useCallback(async (request: TranslationRequest, currentRequestId: number, signal: AbortSignal): Promise<void> => {
@@ -37,22 +37,22 @@ export function useTranslation ({
 
       const response = await translateText(request, signal)
 
-      // Solo actualizar si es la petición más reciente
+      // Only update if it's the most recent request
       if (currentRequestId === requestIdRef.current) {
         setTranslatedText(response.translatedText)
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
-        // Ignorar si fue abortado
+        // Ignore if it was aborted
         return
       }
-      // Solo actualizar si es la petición más reciente
+      // Only update if it's the most recent request
       if (currentRequestId === requestIdRef.current) {
         const errorMessage = err instanceof Error ? err.message : String(err)
         setError(errorMessage)
       }
     } finally {
-      // Solo actualizar si es la petición más reciente
+      // Only update if it's the most recent request
       if (currentRequestId === requestIdRef.current) {
         setLoading(false)
       }
@@ -60,11 +60,11 @@ export function useTranslation ({
   }, [])
 
   useEffect(() => {
-    // Incrementar el ID de la petición y crear un nuevo controller
+    // Increment request ID and create new controller
     const currentRequestId = ++requestIdRef.current
     const controller = new AbortController()
 
-    // No llamar a la API ni validar si el texto está vacío (limpieza silenciosa)
+    // Don't call the API or validate if the text is empty (silent cleanup)
     if (!debouncedText.trim()) {
       setTranslatedText('')
       setError(null)
@@ -78,7 +78,7 @@ export function useTranslation ({
       text: debouncedText
     }
 
-    // Validar la petición (por ejemplo, si los idiomas son iguales)
+    // Validate the request (for example, if the languages are the same)
     const validationError = validateTranslationRequest(requestPayload)
 
     if (validationError) {
@@ -88,10 +88,10 @@ export function useTranslation ({
       return
     }
 
-    // Ejecutar la traducción pasando el signal del controller
+    // Execute the translation passing the controller's signal
     translate(requestPayload, currentRequestId, controller.signal)
 
-    // Cleanup function: abortar la petición actual al cambiar los parámetros o desmontar
+    // Cleanup function: abort the current request when changing parameters or unmounting
     return () => {
       controller.abort()
     }
