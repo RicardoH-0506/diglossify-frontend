@@ -105,7 +105,7 @@ export function TranslationContainer () {
                   <div className='flex items-center gap-2'>
                     <button
                       onClick={handleMicClick}
-                      disabled={isInitializing} // 🔒 Deshabilita el botón mientras el WebSocket se conecta
+                      disabled={isInitializing} // disable button while WebSocket is connecting
                       className={`p-2 rounded-full border transition-all duration-200 flex items-center justify-center ${
                       isInitializing
                         ? 'bg-muted/10 border-border/10 text-muted-foreground/40 cursor-not-allowed opacity-50'
@@ -119,7 +119,7 @@ export function TranslationContainer () {
                       {isRecording ? <Square className='size-3.5' /> : <Mic className='size-3.5' />}
                     </button>
 
-                    {/* Textos de estado dinámicos */}
+                    {/* Dynamic status texts */}
                     {isInitializing && (
                       <span className='text-xs text-muted-foreground animate-pulse font-medium'>
                         Connecting to server...

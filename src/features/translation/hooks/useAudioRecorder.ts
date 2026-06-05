@@ -11,11 +11,11 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
   const [status, setStatus] = useState<AudioRecordingStatus>('idle')
   const [error, setError] = useState<string | null>(null)
 
-  // Estado para bloquear la interfaz mientras el WebSocket conecta
+  // State to block the interface while the WebSocket connects
   const [isInitializing, setIsInitializing] = useState(false)
 
   const isWsReadyRef = useRef(false)
-  // Búfer para guardar el audio mientras el servidor se conecta
+  // Buffer to save the audio while the server connects
   const audioBufferRef = useRef<ArrayBuffer[]>([])
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -35,9 +35,9 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       }
     }
     isWsReadyRef.current = false
-    audioBufferRef.current = [] // Limpiamos el búfer
+    audioBufferRef.current = [] // Clear the buffer
     setIsRecording(false)
-    setIsInitializing(false) // Limpiamos el estado de inicialización
+    setIsInitializing(false) // Clear the initialization state
   }, [])
 
   const stopRecording = useCallback(() => {
@@ -63,8 +63,8 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
       setIsRecording(true)
       setStatus('recording')
       isWsReadyRef.current = false
-      setIsInitializing(true) // Activamos la inicialización en cuanto inicia el proceso
-      audioBufferRef.current = [] // Inicializamos el búfer vacío
+      setIsInitializing(true) // Activate initialization as soon as the process starts
+      audioBufferRef.current = [] // Initialize the empty buffer
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
@@ -88,9 +88,9 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
         }))
 
         isWsReadyRef.current = true
-        setIsInitializing(false) // Conectado con éxito ya se puede liberar el botón
+        setIsInitializing(false) // Connected successfully, the button can now be released
 
-        // Vaciamos el búfer acumulado de inmediato si ya hay audio guardado
+        // Clear the accumulated buffer immediately if there is already audio saved
         if (audioBufferRef.current.length > 0) {
           console.log(`Sending ${audioBufferRef.current.length} buffered chunks`)
           audioBufferRef.current.forEach(chunk => socket.send(chunk))
@@ -148,11 +148,11 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
           try {
             const arrayBuffer = await event.data.arrayBuffer()
 
-            // ¿El canal está listo y abierto? Envíalo en vivo
+            // Is the channel ready and open? Send it live
             if (socket.readyState === WebSocket.OPEN && isWsReadyRef.current) {
               socket.send(arrayBuffer)
             } else {
-              // ¿No está listo el servidor aún? Lo guardamos en la sala de espera
+              // Is the server not ready yet? We save it in the waiting room
               console.log('Server not ready, buffering audio chunk...')
               audioBufferRef.current.push(arrayBuffer)
             }
@@ -180,7 +180,7 @@ export function useAudioRecorder ({ onResult }: UseAudioRecorderProps) {
     isRecording,
     status,
     error,
-    isInitializing, //  Retornamos la nueva bandera para que TranslationContainer la use
+    isInitializing, //  Return the new flag so TranslationContainer can use it
     startRecording,
     stopRecording
   }
